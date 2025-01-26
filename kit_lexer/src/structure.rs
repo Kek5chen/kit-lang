@@ -17,6 +17,12 @@ pub enum Keyword {
     Else,
     If,
     Return,
+    Break,
+    Continue,
+    Use,
+    While,
+    For,
+    Loop,
 }
 
 impl Keyword {
@@ -29,6 +35,12 @@ impl Keyword {
             "else" => Keyword::Else,
             "if" => Keyword::If,
             "return" => Keyword::Return,
+            "break" => Keyword::Break,
+            "continue" => Keyword::Continue,
+            "use" => Keyword::Use,
+            "while" => Keyword::While,
+            "for" => Keyword::For,
+            "loop" => Keyword::Loop,
             _ => panic!("Unknown keyword: {}", keyword),
         }
     }
