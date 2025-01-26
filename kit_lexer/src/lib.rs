@@ -10,13 +10,11 @@ macro_rules! make_regex {
     };
 }
 
-static BRACKET: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"([()])"#));
-static SQUIGGLY_BRACKET: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"([{}])[\S$]*"#));
+static SYMBOLS: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"([(){},;:])"#));
 static OPERATORS: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(==|>=|<=|=|<|>)"#));
 static IDENT: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"([a-zA-Z_][a-zA-Z0-9_]*)"#));
 static COMMENT: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(//[^\n]*\n)"#));
 static KEYWORDS: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(fn|let|struct|else|if|return)[\W$]"#));
-static SEMICOLON: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(;)"#));
 static INTEGER: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(\d+)"#));
 
 fn check_regex<'a>(regex: &Regex, haystack: &'a str) -> Option<(usize, &'a str)> {
@@ -30,9 +28,7 @@ fn check_regex<'a>(regex: &Regex, haystack: &'a str) -> Option<(usize, &'a str)>
 fn lex_next_token(chars: &str) -> Option<(usize, Token)> {
     if let Some((len, name)) = check_regex(&KEYWORDS, chars) {
         Some((len, Token::Keyword(Keyword::from_str(name))))
-    } else if let Some((len, symbol)) = check_regex(&BRACKET, chars) {
-        Some((len, Token::Symbol(symbol.to_string())))
-    } else if let Some((len, symbol)) = check_regex(&SQUIGGLY_BRACKET, chars) {
+    } else if let Some((len, symbol)) = check_regex(&SYMBOLS, chars) {
         Some((len, Token::Symbol(symbol.to_string())))
     } else if let Some((len, ident)) = check_regex(&IDENT, chars) {
         Some((len, Token::Ident(ident.to_string())))
@@ -40,8 +36,6 @@ fn lex_next_token(chars: &str) -> Option<(usize, Token)> {
         Some((len, Token::Comment(comment.to_string())))
     } else if let Some((len, operator)) = check_regex(&OPERATORS, chars) {
         Some((len, Token::Operator(operator.to_string())))
-    } else if let Some((len, semicolon)) = check_regex(&SEMICOLON, chars) {
-        Some((len, Token::Symbol(semicolon.to_string())))
     } else if let Some((len, integer)) = check_regex(&INTEGER, chars) {
         Some((len, Token::Literal(integer.to_string())))
     } else {
