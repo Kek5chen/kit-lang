@@ -13,8 +13,8 @@ macro_rules! make_regex {
 static SYMBOLS: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(::|->|[|(){}\[\],;:!\$.&'])"#));
 static OPERATORS: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(==|>=|<=|=|<|>|\+=|-=|\*=|/=|\+|-|/|\*)"#));
 static IDENT: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"([a-zA-Z_][a-zA-Z0-9_]*)"#));
-static COMMENT: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(//[^\n]*\n)"#));
-static KEYWORDS: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(fn|let|struct|else|if|return|break|continue|use|while|for|loop)[\W$]"#));
+static COMMENT: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(//[^\n]*(\n|$))"#));
+static KEYWORDS: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(fn|let|struct|else|if|return|break|continue|use|while|for|loop|pub|mod)\b"#));
 static LITERALS: LazyLock<Regex> = LazyLock::new(|| make_regex!(r#"(\d+|'.')"#));
 
 // String parsing
@@ -66,22 +66,28 @@ fn lex_next_token(chars: &str) -> Option<(usize, Token)> {
         return Some((string.len(), Token::Literal(string)));
     }
 
-    if let Some((len, name)) = check_regex(&KEYWORDS, chars) {
-        Some((len, Token::Keyword(Keyword::from_str(name))))
-    } else if let Some((len, literal)) = check_regex(&LITERALS, chars) {
-        Some((len, Token::Literal(literal.to_string())))
-    } else if let Some((len, symbol)) = check_regex(&SYMBOLS, chars) {
-        Some((len, Token::Symbol(symbol.to_string())))
-    } else if let Some((len, ident)) = check_regex(&IDENT, chars) {
-        Some((len, Token::Ident(ident.to_string())))
-    } else if let Some((len, comment)) = check_regex(&COMMENT, chars) {
-        Some((len, Token::Comment(comment.to_string())))
-    } else if let Some((len, operator)) = check_regex(&OPERATORS, chars) {
-        Some((len, Token::Operator(operator.to_string())))
-    } else {
-        None
-    }
-}
+    check_regex(&KEYWORDS, chars)
+        .map(|(len, name)| (len, Token::Keyword(Keyword::from_str(name))))
+        .or_else(|| {
+            check_regex(&LITERALS, chars)
+                .map(|(len, literal)| (len, Token::Literal(literal.to_string())))
+        })
+        .or_else(|| {
+            check_regex(&SYMBOLS, chars)
+                .map(|(len, symbol)| (len, Token::Symbol(symbol.to_string())))
+        })
+        .or_else(|| {
+            check_regex(&IDENT, chars)
+                .map(|(len, ident)| (len, Token::Ident(ident.to_string())))
+        })
+        .or_else(|| {
+            check_regex(&COMMENT, chars)
+                .map(|(len, comment)| (len, Token::Comment(comment.to_string())))
+        })
+        .or_else(|| {
+            check_regex(&OPERATORS, chars)
+                .map(|(len, operator)| (len, Token::Operator(operator.to_string())))
+        })}
 
 pub fn lex(code: &str) -> Result<TokenStream, (usize, TokenStream)> {
     let mut tokens = TokenStream::new();

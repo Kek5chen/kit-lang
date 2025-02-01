@@ -23,6 +23,8 @@ pub enum Keyword {
     While,
     For,
     Loop,
+    Pub,
+    Mod,
 }
 
 impl Keyword {
@@ -41,6 +43,8 @@ impl Keyword {
             "while" => Keyword::While,
             "for" => Keyword::For,
             "loop" => Keyword::Loop,
+            "pub" => Keyword::Pub,
+            "mod" => Keyword::Mod,
             _ => panic!("Unknown keyword: {}", keyword),
         }
     }
